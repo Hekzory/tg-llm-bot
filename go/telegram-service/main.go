@@ -6,6 +6,7 @@ import (
 
 func main() {
 
-	fmt.Println("Hello, telegram-service!")
+	fmt.Println("Hello, telegram-service and David and Oleg!")
+	fmt.Println(shared.CommonFunction())
 
 }
