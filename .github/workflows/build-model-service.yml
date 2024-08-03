@@ -1,0 +1,31 @@
+name: Build model-service
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v3
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.22.5'
+
+    - name: Prepare directory structure
+      run: |
+        mkdir -p go/telegram-service/sql
+        cp -r sql/* go/telegram-service/sql/
+
+    - name: Build
+      run: |
+        cd go/telegram-service
+        go mod download
+        go build -o main .
