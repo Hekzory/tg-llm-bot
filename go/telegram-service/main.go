@@ -3,6 +3,7 @@ package main
 import (
 	"Hekzory/tg-llm-bot/go/shared/database"
 	"Hekzory/tg-llm-bot/go/shared/logging"
+
 	//"Hekzory/tg-llm-bot/go/telegram-service/internal/bot"
 	"Hekzory/tg-llm-bot/go/shared/config"
 	"Hekzory/tg-llm-bot/go/telegram-service/internal/handler"
@@ -10,13 +11,11 @@ import (
 	"Hekzory/tg-llm-bot/go/telegram-service/internal/service"
 
 	"fmt"
-
-
 )
 
 func main() {
 	fmt.Println("Hello, telegram-service and David and Oleg!")
-	
+
 	logger, _ := logging.NewLogger("DEBUG")
 	cfg, err := config.NewConfig()
 	if err != nil {
@@ -24,9 +23,10 @@ func main() {
 	}
 	logger.Info("Config successfully loaded")
 
-	db := database.NewDatabase(fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable", 
-	cfg.Database.Host, cfg.Database.Port, cfg.Database.Username, cfg.Database.Password, cfg.Database.Database))
-	logger.Info("Database successfuly loaded")
+	db, err := database.NewDatabase("postgresql://myuser:secret@db:5432/mydatabase", logger)
+	if err != nil {
+		logger.Fatal("Error while loading database: %s", err)
+	}
 
 	repo := repository.NewModelRepository(db, logger)
 

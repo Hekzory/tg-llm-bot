@@ -5,6 +5,7 @@ WORKDIR /app
 COPY go/go.mod ./
 COPY go/model-service ./model-service/
 COPY go/shared ./shared/
+COPY sql ./model-service/sql/
 
 RUN go mod download
 
