@@ -1,4 +1,4 @@
-name: Build model-service
+name: Build telegram-service
 
 on:
   push:
@@ -21,11 +21,11 @@ jobs:
 
     - name: Prepare directory structure
       run: |
-        mkdir -p go/model-service/sql
-        cp -r sql/* go/model-service/sql/
+        mkdir -p go/telegram-service/sql
+        cp -r sql/* go/telegram-service/sql/
 
     - name: Build
       run: |
-        cd go/model-service
+        cd go/telegram-service
         go mod download
         go build -o main .
