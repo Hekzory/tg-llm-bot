@@ -17,7 +17,7 @@ func main() {
 	fmt.Println("Hello, telegram-service and David and Oleg!")
 
 	logger, _ := logging.NewLogger("DEBUG")
-	cfg, err := config.NewConfig()
+	cfg, err := config.NewConfig(logger)
 	if err != nil {
 		logger.Fatal("Error while loading config: %s", err)
 	}
