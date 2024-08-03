@@ -6,8 +6,10 @@ services:
     ports:
       - "8081:8081"
     depends_on:
-      - db
-      - ollama
+      db:
+        condition: service_healthy
+      ollama:
+        condition: service_started
 
   telegram-service:
     build:
@@ -16,7 +18,8 @@ services:
     ports:
       - "8082:8082"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
 
   db:
     image: 'postgres:17beta2-alpine'
@@ -30,7 +33,7 @@ services:
       - pg-data:/var/lib/postgresql/data
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -d mydatabase -U myuser" ]
-      interval: 10s
+      interval: 3s
       timeout: 5s
       retries: 5
 
@@ -41,11 +44,6 @@ services:
     volumes:
       - ./ollama/data:/root/.ollama
     container_name: ollama
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:11434/"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
     environment:
       - OLLAMA_KEEP_ALIVE=-1
 
