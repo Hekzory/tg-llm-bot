@@ -9,7 +9,7 @@ type Config struct {
 func LoadConfig() (*Config, error) {
 	cfg := &Config{
 		ServerPort:  1111,
-		DatabaseURL: "None",
+		DatabaseURL: "postgresql://myuser:secret@db:5432/mydatabase",
 		LogLevel:    "DEBUG",
 	}
 	return cfg, nil

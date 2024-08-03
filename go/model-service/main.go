@@ -7,7 +7,11 @@ import (
 	"Hekzory/tg-llm-bot/go/model-service/internal/service"
 	"Hekzory/tg-llm-bot/go/shared/database"
 	"Hekzory/tg-llm-bot/go/shared/logging"
+	_ "embed"
 )
+
+//go:embed sql/init.sql
+var initSQLstring string
 
 func main() {
 
@@ -21,8 +25,15 @@ func main() {
 	logger.Info("Config loaded successfully")
 
 	// Initialize Database
-	db := database.NewDatabase(cfg.DatabaseURL)
-	logger.Info("Database loaded successfully")
+	db, err := database.NewDatabase(cfg.DatabaseURL, logger)
+	if err != nil {
+		logger.Fatal("Error while loading database: %s", err)
+	}
+
+	err = db.InitializeTables(initSQLstring)
+	if err != nil {
+		logger.Fatal("Error initializing database: %s", err)
+	}
 
 	// Initialize Repository
 	repo := repository.NewModelRepository(db, logger)

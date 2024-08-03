@@ -5,6 +5,7 @@ WORKDIR /app
 COPY go/go.mod ./
 COPY go/telegram-service ./telegram-service/
 COPY go/shared ./shared/
+COPY sql ./telegram-service/sql/
 
 RUN go mod download
 
