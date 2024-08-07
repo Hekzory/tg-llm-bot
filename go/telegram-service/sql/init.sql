@@ -1,0 +1,3 @@
+-- This is an empty file to make golang linters ignore the fake error with embed.
+-- You should edit the file at {workdir}/sql/init.sql, since it will be copied via Dockerfile
+-- instructions at build time
