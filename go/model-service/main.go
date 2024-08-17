@@ -36,10 +36,11 @@ func main() {
 	}
 
 	// Initialize Repository
-	repo := repository.NewUserRepository(db, logger)
+	userRepo := repository.NewUserRepository(db, logger)
+	messageRepo := repository.NewMessageRepository(db, logger)
 
 	// Initialize Service
-	svc := service.NewModelService(repo, logger)
+	svc := service.NewModelService(userRepo, messageRepo, logger)
 
 	// Initialize Handler
 	handler := handler.NewModelHandler(svc, logger, cfg)
