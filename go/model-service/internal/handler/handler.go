@@ -11,6 +11,10 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
+	"os/signal"
+	"sync"
+	"syscall"
 	"time"
 )
 
@@ -20,6 +24,7 @@ type ModelHandler struct {
 	cfg                  *config.Config
 	messageQuestionQueue chan models.Message
 	messageResultQueue   chan models.Message
+	httpClient           *http.Client
 }
 
 func NewModelHandler(service *service.ModelService, logger *logging.Logger, config *config.Config) *ModelHandler {
@@ -29,7 +34,15 @@ func NewModelHandler(service *service.ModelService, logger *logging.Logger, conf
 		cfg:                  config,
 		messageQuestionQueue: make(chan models.Message, 100),
 		messageResultQueue:   make(chan models.Message, 100),
+		httpClient:           &http.Client{Timeout: 120 * time.Second},
 	}
+}
+
+// ModelRequest represents the request body for model-related HTTP requests.
+type ModelRequest struct {
+	Model  string `json:"model"`
+	Prompt string `json:"prompt"`
+	Stream bool   `json:"stream"`
 }
 
 func (h *ModelHandler) StartServer() {
@@ -38,16 +51,27 @@ func (h *ModelHandler) StartServer() {
 	defer cancel()
 
 	// Pull the model before starting the server
-	err := h.pullModel(ctx)
-	if err != nil {
+	if err := h.pullModel(ctx); err != nil {
 		h.logger.Fatal("Failed to pull model: %s", err)
-		return
 	}
 
-	go h.pollDatabase(ctx)
-	go h.processNewMessages(ctx)
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go func() { defer wg.Done(); h.pollDatabase(ctx) }()
+	go func() { defer wg.Done(); h.processNewMessages(ctx) }()
 
-	select {} // Block forever
+	// Implement graceful shutdown
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
+	<-sigCh
+	h.logger.Info("Received signal to exit. Shutting down...")
+
+	cancel() // Cancel the context to stop the goroutines
+
+	// Wait for the goroutines to finish
+	wg.Wait()
+
+	h.logger.Info("Server stopped.")
 }
 
 func (h *ModelHandler) pullModel(ctx context.Context) error {
@@ -65,8 +89,7 @@ func (h *ModelHandler) pullModel(ctx context.Context) error {
 	}
 	req.Header.Set("Content-Type", "application/json")
 
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	resp, err := h.httpClient.Do(req)
 	if err != nil {
 		return fmt.Errorf("error making request to Ollama API: %w", err)
 	}
@@ -86,12 +109,9 @@ func (h *ModelHandler) pullModel(ctx context.Context) error {
 			return fmt.Errorf("error decoding response body: %w", err)
 		}
 
-		status, ok := response["status"].(string)
-		if ok && status == "success" {
+		if status, ok := response["status"].(string); ok && status == "success" {
 			h.logger.Info("Model pulled successfully")
 			return nil
-		} else {
-			//h.logger.Info(response["status"].(string))
 		}
 	}
 
@@ -99,31 +119,32 @@ func (h *ModelHandler) pullModel(ctx context.Context) error {
 }
 
 func (h *ModelHandler) pollDatabase(ctx context.Context) {
+	ticker := time.NewTicker(h.cfg.DBPollingInterval)
+	defer ticker.Stop()
 	for {
 		select {
-		case message := <-h.messageResultQueue:
-			err := h.service.UpdateMessage(ctx, message)
-			if err != nil {
-				h.logger.Error("Error updating message: %s", err)
-			}
-		default:
+		case <-ctx.Done():
+			h.logger.Info("Stopping database polling due to context cancellation")
+			return
+		case <-ticker.C:
 			messages, err := h.service.GetNewMessages(ctx)
 			if err != nil {
 				h.logger.Error("Error fetching new messages: %s", err)
 				continue
 			}
-
 			for _, message := range messages {
-				err := h.service.UpdateMessageStatus(ctx, message.ID, "processing")
-				if err != nil {
+				if err := h.service.UpdateMessageStatus(ctx, message.ID, "processing"); err != nil {
 					h.logger.Error("Error updating message status: %s", err)
 					continue
 				}
 				h.messageQuestionQueue <- message
 			}
-
 			h.logger.Debug("Polling db done")
-			time.Sleep(h.cfg.DBPollingInterval)
+		case message := <-h.messageResultQueue:
+			err := h.service.UpdateMessage(ctx, message)
+			if err != nil {
+				h.logger.Error("Error updating message: %s", err)
+			}
 		}
 	}
 }
@@ -131,21 +152,23 @@ func (h *ModelHandler) pollDatabase(ctx context.Context) {
 func (h *ModelHandler) processNewMessages(ctx context.Context) {
 	for {
 		select {
+		case <-ctx.Done():
+			h.logger.Info("Stopping message processing due to context cancellation")
+			return
 		case message := <-h.messageQuestionQueue:
 			h.logger.Debug(fmt.Sprintf("Got message to process: %v", message))
 			go h.processNewMessage(ctx, message)
-		case <-ctx.Done():
-			return
 		}
 	}
 }
 
 func (h *ModelHandler) processNewMessage(ctx context.Context, message models.Message) {
 	url := h.cfg.ModelApiUrl + "api/generate"
-	requestBody, err := json.Marshal(map[string]any{
-		"model":  h.cfg.ModelName,
-		"prompt": message.Question,
-		"stream": false,
+
+	requestBody, err := json.Marshal(ModelRequest{
+		Model:  h.cfg.ModelName,
+		Prompt: message.Question,
+		Stream: false,
 	})
 
 	if err != nil {
@@ -160,8 +183,7 @@ func (h *ModelHandler) processNewMessage(ctx context.Context, message models.Mes
 	}
 	req.Header.Set("Content-Type", "application/json")
 
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	resp, err := h.httpClient.Do(req)
 	if err != nil {
 		h.logger.Error("Error making request to Ollama API: %s", err)
 		return
