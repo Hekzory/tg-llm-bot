@@ -72,3 +72,56 @@ func (db *DB) GetAllUsers() ([]models.User, error) {
 	err := db.Select(&users, "SELECT * FROM users")
 	return users, err
 }
+
+// AddMessage adds a new message to the message_queue
+func (db *DB) AddMessage(message *models.Message) error {
+	query := `INSERT INTO message_queue (user_id, question, status) VALUES ($1, $2, $3) RETURNING id, created_at`
+	return db.QueryRowx(query, message.UserID, message.Question, message.Status).Scan(&message.ID, &message.CreatedAt)
+}
+
+// GetMessageByID retrieves a message by its ID
+func (db *DB) GetMessageByID(id int) (*models.Message, error) {
+	message := &models.Message{}
+	err := db.Get(message, "SELECT * FROM message_queue WHERE id = $1", id)
+	if err != nil {
+		return nil, err
+	}
+	return message, nil
+}
+
+// GetMessageByStatus retrieves a message by its status
+func (db *DB) GetMessageByStatus(status string) ([]models.Message, error) {
+	var messages []models.Message
+	err := db.Select(&messages, "SELECT * FROM message_queue WHERE status = $1", status)
+	if err != nil {
+		return nil, err
+	}
+	return messages, nil
+}
+
+// UpdateMessageStatus updates the status of a message
+func (db *DB) UpdateMessageStatus(id int, status string) error {
+	query := `UPDATE message_queue SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2`
+	_, err := db.Exec(query, status, id)
+	return err
+}
+
+// DeleteMessage removes a message from the message_queue
+func (db *DB) DeleteMessage(id int) error {
+	_, err := db.Exec("DELETE FROM message_queue WHERE id = $1", id)
+	return err
+}
+
+// GetAllMessages retrieves all messages from the message_queue
+func (db *DB) GetAllMessages() ([]models.Message, error) {
+	var messages []models.Message
+	err := db.Select(&messages, "SELECT * FROM message_queue")
+	return messages, err
+}
+
+// UpdateMessage updates an existing message
+func (db *DB) UpdateMessage(message *models.Message) error {
+	query := `UPDATE message_queue SET user_id = $1, question = $2, answer = $3, status = $4 WHERE id = $5`
+	_, err := db.Exec(query, message.UserID, message.Question, message.Answer, message.Status, message.ID)
+	return err
+}

@@ -15,18 +15,20 @@ import (
 )
 
 type ModelHandler struct {
-	service   *service.UserService
-	logger    *logging.Logger
-	cfg       *config.Config
-	userQueue chan models.User
+	service              *service.ModelService
+	logger               *logging.Logger
+	cfg                  *config.Config
+	messageQuestionQueue chan models.Message
+	messageResultQueue   chan models.Message
 }
 
-func NewModelHandler(service *service.UserService, logger *logging.Logger, config *config.Config) *ModelHandler {
+func NewModelHandler(service *service.ModelService, logger *logging.Logger, config *config.Config) *ModelHandler {
 	return &ModelHandler{
-		service:   service,
-		logger:    logger,
-		cfg:       config,
-		userQueue: make(chan models.User, 100),
+		service:              service,
+		logger:               logger,
+		cfg:                  config,
+		messageQuestionQueue: make(chan models.Message, 100),
+		messageResultQueue:   make(chan models.Message, 100),
 	}
 }
 
@@ -43,7 +45,7 @@ func (h *ModelHandler) StartServer() {
 	}
 
 	go h.pollDatabase(ctx)
-	go h.processNewUsers(ctx)
+	go h.processNewMessages(ctx)
 
 	select {} // Block forever
 }
@@ -77,7 +79,7 @@ func (h *ModelHandler) pullModel(ctx context.Context) error {
 
 	decoder := json.NewDecoder(resp.Body)
 	for {
-		var response map[string]interface{}
+		var response map[string]any
 		if err := decoder.Decode(&response); err == io.EOF {
 			break
 		} else if err != nil {
@@ -98,39 +100,51 @@ func (h *ModelHandler) pullModel(ctx context.Context) error {
 
 func (h *ModelHandler) pollDatabase(ctx context.Context) {
 	for {
-		users, err := h.service.GetAllUsers(ctx)
-		if err != nil {
-			h.logger.Error("Error fetching new users: %s", err)
-			continue
+		select {
+		case message := <-h.messageResultQueue:
+			err := h.service.UpdateMessage(ctx, message)
+			if err != nil {
+				h.logger.Error("Error updating message: %s", err)
+			}
+		default:
+			messages, err := h.service.GetNewMessages(ctx)
+			if err != nil {
+				h.logger.Error("Error fetching new messages: %s", err)
+				continue
+			}
+
+			for _, message := range messages {
+				err := h.service.UpdateMessageStatus(ctx, message.ID, "processing")
+				if err != nil {
+					h.logger.Error("Error updating message status: %s", err)
+					continue
+				}
+				h.messageQuestionQueue <- message
+			}
+
+			h.logger.Debug("Polling db done")
+			time.Sleep(h.cfg.DBPollingInterval)
 		}
-
-		for _, user := range users {
-			h.userQueue <- user // Добавляем пользователя в канал
-		}
-
-		h.logger.Debug("Polling db done")
-
-		time.Sleep(h.cfg.DBPollingInterval)
 	}
 }
 
-func (h *ModelHandler) processNewUsers(ctx context.Context) {
+func (h *ModelHandler) processNewMessages(ctx context.Context) {
 	for {
 		select {
-		case user := <-h.userQueue: // Читаем пользователя из канала
-			h.logger.Debug(fmt.Sprintf("Got user to process: %v", user))
-			go h.processUser(ctx, user)
+		case message := <-h.messageQuestionQueue:
+			h.logger.Debug(fmt.Sprintf("Got message to process: %v", message))
+			go h.processNewMessage(ctx, message)
 		case <-ctx.Done():
 			return
 		}
 	}
 }
 
-func (h *ModelHandler) processUser(ctx context.Context, user models.User) {
+func (h *ModelHandler) processNewMessage(ctx context.Context, message models.Message) {
 	url := h.cfg.ModelApiUrl + "api/generate"
-	requestBody, err := json.Marshal(map[string]interface{}{
+	requestBody, err := json.Marshal(map[string]any{
 		"model":  h.cfg.ModelName,
-		"prompt": "hi, my name is " + user.Username,
+		"prompt": message.Question,
 		"stream": false,
 	})
 
@@ -160,19 +174,19 @@ func (h *ModelHandler) processUser(ctx context.Context, user models.User) {
 		return
 	}
 
-	var response map[string]interface{}
+	var response map[string]any
 	err = json.Unmarshal(body, &response)
 	if err != nil {
 		h.logger.Error("Error unmarshalling response body: %s, Response: %s", err, response)
 		return
 	}
 
-	welcomeMessage, ok := response["response"].(string)
-	if !ok {
-		h.logger.Error("Message not found in response")
-		h.logger.Error(fmt.Sprintf("%v", response))
-		return
+	answer, ok := response["response"].(string)
+	if ok {
+		message.Answer = answer
+		h.messageResultQueue <- message
 	} else {
-		h.logger.Info(welcomeMessage)
+		h.logger.Error(fmt.Sprintf("Message not found in response %v", response))
+		return
 	}
 }

@@ -28,3 +28,23 @@ CREATE OR REPLACE TRIGGER update_users_updated_at
 BEFORE UPDATE ON users
 FOR EACH ROW
 EXECUTE FUNCTION update_updated_at_column();
+
+-- Create message_queue table
+CREATE TABLE IF NOT EXISTS message_queue (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id),
+    question TEXT NOT NULL,
+    answer TEXT NOT NULL DEFAULT '',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    status VARCHAR(20) CHECK (status IN ('new', 'processing', 'ready', 'answered')) DEFAULT 'new'
+);
+
+-- Create an index on user_id for faster lookups
+CREATE INDEX IF NOT EXISTS idx_message_queue_user_id ON message_queue(user_id);
+
+-- Create a trigger to automatically update the updated_at column for message_queue
+CREATE OR REPLACE TRIGGER update_message_queue_updated_at
+BEFORE UPDATE ON message_queue
+FOR EACH ROW
+EXECUTE FUNCTION update_updated_at_column();
