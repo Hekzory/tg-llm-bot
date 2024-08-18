@@ -13,7 +13,7 @@ type Config struct {
 
 func LoadConfig() (*Config, error) {
 
-	duration, _ := time.ParseDuration("30s")
+	duration, _ := time.ParseDuration("5s")
 
 	cfg := &Config{
 		ServerPort:        1111,
