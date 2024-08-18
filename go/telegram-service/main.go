@@ -3,9 +3,7 @@ package main
 import (
 	"Hekzory/tg-llm-bot/go/shared/database"
 	"Hekzory/tg-llm-bot/go/shared/logging"
-
-	//"Hekzory/tg-llm-bot/go/telegram-service/internal/bot"
-	"Hekzory/tg-llm-bot/go/shared/config"
+	"Hekzory/tg-llm-bot/go/telegram-service/internal/config"
 	"Hekzory/tg-llm-bot/go/telegram-service/internal/handler"
 	"Hekzory/tg-llm-bot/go/telegram-service/internal/repository"
 	"Hekzory/tg-llm-bot/go/telegram-service/internal/service"
@@ -17,7 +15,7 @@ func main() {
 	fmt.Println("Hello, telegram-service and David and Oleg!")
 
 	logger, _ := logging.NewLogger("DEBUG")
-	cfg, err := config.NewConfig(logger)
+	cfg, err := config.LoadConfig(logger)
 	if err != nil {
 		logger.Fatal("Error while loading config: %s", err)
 	}
@@ -28,12 +26,13 @@ func main() {
 		logger.Fatal("Error while loading database: %s", err)
 	}
 
-	repo := repository.NewModelRepository(db, logger)
+	userRepo := repository.NewUserRepository(db, logger)
+	messageRepo := repository.NewMessageRepository(db, logger)
 
-	svc := service.NewModelService(repo, logger)
+	svc := service.NewTelegramService(userRepo, messageRepo, logger)
 
-	handler := handler.NewModelHandler(svc, logger)
+	handler := handler.NewTelegramHandler(svc, logger, cfg)
 
-	handler.StartServer(cfg.Server.Port)
+	handler.StartServer(cfg.ServerPort)
 
 }
