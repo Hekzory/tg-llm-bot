@@ -1,4 +1,4 @@
-FROM ollama/ollama
+FROM ollama/ollama:latest
 
 # Expose the port
 EXPOSE 11434

@@ -39,8 +39,8 @@ func (db *DB) InitializeTables(code string) error {
 
 // AddUser adds a new user to the database
 func (db *DB) AddUser(user *models.User) error {
-	query := `INSERT INTO users (username) VALUES ($1) RETURNING id, created_at`
-	return db.QueryRowx(query, user.Username).Scan(&user.ID, &user.CreatedAt)
+	query := `INSERT INTO users (tg_id, name, username, is_premium) VALUES ($1, $2, $3, $4) RETURNING id, created_at`
+	return db.QueryRowx(query, user.TelegramID, user.Name, user.Username, user.IsPremium).Scan(&user.ID, &user.CreatedAt)
 }
 
 // GetUserByID retrieves a user by their ID
@@ -51,6 +51,33 @@ func (db *DB) GetUserByID(id int) (*models.User, error) {
 		return nil, err
 	}
 	return user, nil
+}
+
+func (db *DB) GetUserByTgID(tg_id int) (*models.User, error) {
+	user := &models.User{}
+	err := db.Get(user, "SELECT * FROM users WHERE tg_id = $1", tg_id)
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
+}
+
+func (db *DB) GetUserIdByTgId(tg_id int) (int, error) {
+	var id int
+	err := db.QueryRowx("SELECT id FROM users WHERE tg_id = $1", tg_id).Scan(&id)
+	if err != nil {
+		return -1, err
+	}
+	return id, err
+}
+
+func (db *DB) GetTgIdByUserId(id int) (int, error) {
+	var tg_id int
+	err := db.QueryRowx("SELECT tg_id FROM users WHERE id = $1", id).Scan(&tg_id)
+	if err != nil {
+		return -1, err
+	}
+	return tg_id, err
 }
 
 // UpdateUser updates an existing user
@@ -70,7 +97,15 @@ func (db *DB) DeleteUser(id int) error {
 func (db *DB) GetAllUsers() ([]models.User, error) {
 	var users []models.User
 	err := db.Select(&users, "SELECT * FROM users")
+
 	return users, err
+}
+
+
+func (db *DB) UserExists(user  *models.User) (bool, error) {
+	var exist bool
+	err := db.QueryRowx("SELECT EXISTS(SELECT 1 FROM users WHERE tg_id = $1);", user.TelegramID).Scan(&exist)
+	return exist, err
 }
 
 // AddMessage adds a new message to the message_queue
