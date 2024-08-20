@@ -18,14 +18,15 @@ func main() {
 	logger, _ := logging.NewLogger("DEBUG")
 
 	// Load Configuration
-	cfg, err := config.LoadConfig()
+	var cfg config.ServiceConfig
+	err := cfg.LoadConfig(logger)
 	if err != nil {
 		logger.Fatal("Error while loading config: %s", err)
 	}
 	logger.Info("Config loaded successfully")
 
 	// Initialize Database
-	db, err := database.NewDatabase(cfg.DatabaseURL, logger)
+	db, err := database.NewDatabase(cfg.Config.DatabaseUrl, logger)
 	if err != nil {
 		logger.Fatal("Error while loading database: %s", err)
 	}
@@ -43,7 +44,7 @@ func main() {
 	svc := service.NewModelService(userRepo, messageRepo, logger)
 
 	// Initialize Handler
-	handler := handler.NewModelHandler(svc, logger, cfg)
+	handler := handler.NewModelHandler(svc, logger, &cfg)
 
 	// Start Server
 	handler.StartServer()

@@ -17,6 +17,8 @@ COPY go/shared ./shared/
 COPY sql ./telegram-service/sql/
 
 WORKDIR /app/telegram-service
+
+RUN mkdir -p ./cfg
 RUN --mount=type=cache,target=/go/pkg/mod/ \
     --mount=type=cache,target="/root/.cache/go-build" \
     go build -o main .

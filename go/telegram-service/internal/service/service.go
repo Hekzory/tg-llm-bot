@@ -42,6 +42,10 @@ func (s *UserService) GetReadyMessages(ctx context.Context) ([]models.Message, e
 	return s.messageRepo.GetReadyMessages()
 }
 
+func (s *UserService) GetProcessingMessages(ctx context.Context) ([]models.Message, error) {
+	return s.messageRepo.GetProcessingMessages()
+}
+
 func (s *UserService) AddMessage(ctx context.Context, userId int, questiont string) error {
 	return s.messageRepo.AddMessage(&models.Message{UserID: userId, Question: questiont, Status: "new"})
 
