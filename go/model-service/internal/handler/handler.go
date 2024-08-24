@@ -50,12 +50,28 @@ func (h *ModelHandler) StartServer() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	// Pull the model before starting the server
-	if err := h.pullModel(ctx); err != nil {
-		h.logger.Fatal("Failed to pull model: %s", err)
-	}
-
 	var wg sync.WaitGroup
+	wg.Add(2)
+
+	// Run pullModel concurrently
+	go func() {
+		defer wg.Done()
+		if err := h.pullModel(ctx); err != nil {
+			h.logger.Fatal("Failed to pull model: %s", err)
+		}
+	}()
+
+	// Run resetStuckMessages concurrently
+	go func() {
+		defer wg.Done()
+		if err := h.resetStuckMessages(ctx); err != nil {
+			h.logger.Fatal("Failed to reset stuck messages: %s", err)
+		}
+	}()
+
+	// Wait for both init tasks to complete before running the main loop
+	wg.Wait()
+
 	wg.Add(2)
 	go func() { defer wg.Done(); h.pollDatabase(ctx) }()
 	go func() { defer wg.Done(); h.processNewMessages(ctx) }()
@@ -72,6 +88,22 @@ func (h *ModelHandler) StartServer() {
 	wg.Wait()
 
 	h.logger.Info("Server stopped.")
+}
+
+func (h *ModelHandler) resetStuckMessages(ctx context.Context) error {
+	messages, err := h.service.GetStuckMessages(ctx, h.cfg.ModelAnswerTimeout)
+	if err != nil {
+		return fmt.Errorf("error fetching stuck messages: %w", err)
+	}
+
+	for _, message := range messages {
+		if err := h.service.UpdateMessageStatus(ctx, message.ID, "new"); err != nil {
+			h.logger.Error("Error resetting message status: %s", err)
+		}
+	}
+
+	h.logger.Info("Stuck messages reset successfully")
+	return nil
 }
 
 func (h *ModelHandler) pullModel(ctx context.Context) error {

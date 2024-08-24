@@ -4,6 +4,7 @@ import (
 	"Hekzory/tg-llm-bot/go/shared/database"
 	"Hekzory/tg-llm-bot/go/shared/database/models"
 	"Hekzory/tg-llm-bot/go/shared/logging"
+	"time"
 )
 
 // MessageRepository предоставляет методы для работы с сообщениями в базе данных
@@ -35,4 +36,12 @@ func (repo *MessageRepository) GetNewMessages() ([]models.Message, error) {
 
 func (repo *MessageRepository) UpdateMessage(message *models.Message) error {
 	return repo.db.UpdateMessage(message)
+}
+
+func (repo *MessageRepository) GetStuckMessages(timeout time.Duration) ([]models.Message, error) {
+	// Получаем текущее время минус таймаут
+	cutoffTime := time.Now().Add(-timeout)
+
+	// Используем метод базы данных для получения сообщений по статусу и времени
+	return repo.db.GetMessagesByStatusAndTime("processing", cutoffTime)
 }

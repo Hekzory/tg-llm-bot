@@ -4,6 +4,7 @@ import (
 	"Hekzory/tg-llm-bot/go/shared/database/models"
 	"Hekzory/tg-llm-bot/go/shared/logging"
 	"fmt"
+	"time"
 
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/jmoiron/sqlx"
@@ -101,8 +102,7 @@ func (db *DB) GetAllUsers() ([]models.User, error) {
 	return users, err
 }
 
-
-func (db *DB) UserExists(user  *models.User) (bool, error) {
+func (db *DB) UserExists(user *models.User) (bool, error) {
 	var exist bool
 	err := db.QueryRowx("SELECT EXISTS(SELECT 1 FROM users WHERE tg_id = $1);", user.TelegramID).Scan(&exist)
 	return exist, err
@@ -159,4 +159,18 @@ func (db *DB) UpdateMessage(message *models.Message) error {
 	query := `UPDATE message_queue SET user_id = $1, question = $2, answer = $3, status = $4 WHERE id = $5`
 	_, err := db.Exec(query, message.UserID, message.Question, message.Answer, message.Status, message.ID)
 	return err
+}
+
+func (db *DB) GetMessagesByStatusAndTime(status string, cutoffTime time.Time) ([]models.Message, error) {
+	var messages []models.Message
+	query := `
+        SELECT * FROM message_queue 
+        WHERE status = $1 
+        AND updated_at < $2
+    `
+	err := db.Select(&messages, query, status, cutoffTime)
+	if err != nil {
+		return nil, err
+	}
+	return messages, nil
 }
