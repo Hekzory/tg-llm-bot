@@ -34,7 +34,7 @@ func NewModelHandler(service *service.ModelService, logger *logging.Logger, conf
 		cfg:                  config,
 		messageQuestionQueue: make(chan models.Message, 100),
 		messageResultQueue:   make(chan models.Message, 100),
-		httpClient:           &http.Client{Timeout: 120 * time.Second},
+		httpClient:           &http.Client{Timeout: config.ModelAnswerTimeout},
 	}
 }
 
