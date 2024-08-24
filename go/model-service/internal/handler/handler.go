@@ -188,7 +188,7 @@ func (h *ModelHandler) processNewMessages(ctx context.Context) {
 			h.logger.Info("Stopping message processing due to context cancellation")
 			return
 		case message := <-h.messageQuestionQueue:
-			h.logger.Debug(fmt.Sprintf("Got message to process: %v", message))
+			h.logger.Debug("Got message to process: %v", message)
 			go h.processNewMessage(ctx, message)
 		}
 	}
@@ -240,7 +240,7 @@ func (h *ModelHandler) processNewMessage(ctx context.Context, message models.Mes
 		message.Answer = answer
 		h.messageResultQueue <- message
 	} else {
-		h.logger.Error(fmt.Sprintf("Message not found in response %v", response))
+		h.logger.Error("Message not found in response %v", response)
 		return
 	}
 }

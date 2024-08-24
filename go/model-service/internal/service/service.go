@@ -5,7 +5,6 @@ import (
 	"Hekzory/tg-llm-bot/go/shared/database/models"
 	"Hekzory/tg-llm-bot/go/shared/logging"
 	"context"
-	"fmt"
 	"time"
 )
 
@@ -36,7 +35,7 @@ func (s *ModelService) UpdateMessageStatus(ctx context.Context, messageID int, s
 	if err != nil {
 		return err
 	}
-	s.logger.Info(fmt.Sprintf("Updated message status: messageID=%d, status=%s", messageID, status))
+	s.logger.Info("Updated message status: messageID=%d, status=%s", messageID, status)
 	return nil
 }
 
@@ -49,7 +48,7 @@ func (s *ModelService) UpdateMessage(ctx context.Context, message models.Message
 		return err
 	}
 
-	s.logger.Info(fmt.Sprintf("Updated message: %+v", message))
+	s.logger.Info("Updated message: %+v", message)
 	return nil
 }
 
