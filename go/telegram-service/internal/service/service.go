@@ -5,7 +5,6 @@ import (
 	"Hekzory/tg-llm-bot/go/shared/logging"
 	"Hekzory/tg-llm-bot/go/telegram-service/internal/repository"
 	"context"
-	"fmt"
 )
 
 type UserService struct {
@@ -35,7 +34,7 @@ func (s *UserService) UpdateMessageStatus(ctx context.Context, messageID int, st
 	if err != nil {
 		return err
 	}
-	s.logger.Info(fmt.Sprintf("Updated message status: messageID=%d, status=%s", messageID, status))
+	s.logger.Info("Updated message status: messageID=%d, status=%s", messageID, status)
 	return nil
 }
 

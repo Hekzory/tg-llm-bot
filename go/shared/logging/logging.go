@@ -2,6 +2,7 @@ package logging
 
 import (
 	"errors"
+	"fmt"
 	"log/slog"
 	"os"
 )
@@ -51,26 +52,31 @@ func NewLogger(logLevel string) (*Logger, error) {
 
 // Debug logs a message at the DEBUG level.
 func (l *Logger) Debug(format string, args ...interface{}) {
-	l.logger.Debug(format, args...)
+	message := fmt.Sprintf(format, args...)
+	l.logger.Debug(message)
 }
 
 // Info logs a message at the INFO level.
 func (l *Logger) Info(format string, args ...interface{}) {
-	l.logger.Info(format, args...)
+	message := fmt.Sprintf(format, args...)
+	l.logger.Info(message)
 }
 
 // Warning logs a message at the WARNING level.
 func (l *Logger) Warning(format string, args ...interface{}) {
-	l.logger.Warn(format, args...)
+	message := fmt.Sprintf(format, args...)
+	l.logger.Warn(message)
 }
 
 // Error logs a message at the ERROR level.
 func (l *Logger) Error(format string, args ...interface{}) {
-	l.logger.Error(format, args...)
+	message := fmt.Sprintf(format, args...)
+	l.logger.Error(message)
 }
 
 // Fatal logs a message at the FATAL level and exits the application.
 func (l *Logger) Fatal(format string, args ...interface{}) {
-	l.logger.Error(format, args...) // FATAL is treated as ERROR in slog
+	message := fmt.Sprintf(format, args...)
+	l.logger.Error(message) // FATAL is treated as ERROR in slog
 	os.Exit(1)
 }
