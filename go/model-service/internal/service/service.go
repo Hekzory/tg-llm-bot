@@ -6,6 +6,7 @@ import (
 	"Hekzory/tg-llm-bot/go/shared/logging"
 	"context"
 	"fmt"
+	"time"
 )
 
 type ModelService struct {
@@ -50,4 +51,8 @@ func (s *ModelService) UpdateMessage(ctx context.Context, message models.Message
 
 	s.logger.Info(fmt.Sprintf("Updated message: %+v", message))
 	return nil
+}
+
+func (s *ModelService) GetStuckMessages(ctx context.Context, timeout time.Duration) ([]models.Message, error) {
+	return s.messageRepo.GetStuckMessages(timeout)
 }

@@ -49,6 +49,7 @@ EXECUTE FUNCTION update_updated_at_column();
 -- Create message_queue table
 CREATE TABLE IF NOT EXISTS message_queue (
     id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
     conversation_id INTEGER REFERENCES conversations(id) ON DELETE CASCADE,
     question TEXT NOT NULL,
     answer TEXT NOT NULL DEFAULT '',

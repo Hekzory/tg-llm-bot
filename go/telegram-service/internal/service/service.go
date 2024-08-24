@@ -55,9 +55,9 @@ func (s *UserService) UserExists(ctx context.Context, tg_id int) (bool, error) {
 func (s *UserService) AddUser(ctx context.Context, tg_id int, name string, username string) error {
 	return s.userRepo.AddUser(&models.User{
 		TelegramID: tg_id,
-		Name: name,
-		Username: username,
-		IsPremium: false,
+		Name:       name,
+		Username:   username,
+		IsPremium:  false,
 	})
 }
 
