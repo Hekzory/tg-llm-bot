@@ -9,16 +9,19 @@ import (
 )
 
 type ModelService struct {
-	userRepo    *repository.UserRepository
-	messageRepo *repository.MessageRepository
-	logger      *logging.Logger
+	userRepo         *repository.UserRepository
+	messageRepo      *repository.MessageRepository
+	conversationRepo *repository.ConversationRepository
+	logger           *logging.Logger
 }
 
-func NewModelService(userRepo *repository.UserRepository, messageRepo *repository.MessageRepository, logger *logging.Logger) *ModelService {
+func NewModelService(userRepo *repository.UserRepository, messageRepo *repository.MessageRepository,
+	conversationRepo *repository.ConversationRepository, logger *logging.Logger) *ModelService {
 	return &ModelService{
-		userRepo:    userRepo,
-		messageRepo: messageRepo,
-		logger:      logger,
+		userRepo:         userRepo,
+		messageRepo:      messageRepo,
+		conversationRepo: conversationRepo,
+		logger:           logger,
 	}
 }
 
@@ -54,4 +57,8 @@ func (s *ModelService) UpdateMessage(ctx context.Context, message models.Message
 
 func (s *ModelService) GetStuckMessages(ctx context.Context, timeout time.Duration) ([]models.Message, error) {
 	return s.messageRepo.GetStuckMessages(timeout)
+}
+
+func (s *ModelService) GetMessagesByConversationID(ctx context.Context, conversationID int64) ([]models.Message, error) {
+	return s.messageRepo.GetMessagesByConversationID(conversationID)
 }

@@ -194,3 +194,16 @@ func (db *DB) GetConvIdByUserId(userId int) (int, error) {
 	}
 	return conv_id, err
 }
+
+func (db *DB) GetMessagesByConversationID(conversationID int64) ([]models.Message, error) {
+	var messages []models.Message
+	query := `
+        SELECT * FROM message_queue 
+        WHERE conversation_id = $1 
+    `
+	err := db.Select(&messages, query, conversationID)
+	if err != nil {
+		return nil, err
+	}
+	return messages, nil
+}
