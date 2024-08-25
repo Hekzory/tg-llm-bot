@@ -41,6 +41,6 @@ func (repo *MessageRepository) UpdateMessage(message *models.Message) error {
 	return repo.db.UpdateMessage(message)
 }
 
-func (repo *MessageRepository) AddMessage(message *models.Message) error {
+func (repo *MessageRepository) AddMessage(message *models.Message) (error, int) {
 	return repo.db.AddMessage(message)
 }

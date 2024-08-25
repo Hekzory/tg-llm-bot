@@ -30,8 +30,9 @@ func main() {
 
 	userRepo := repository.NewUserRepository(db, logger)
 	messageRepo := repository.NewMessageRepository(db, logger)
+	conversationRepo := repository.NewConversationRepository(db, logger)
 
-	svc := service.NewTelegramService(userRepo, messageRepo, logger)
+	svc := service.NewTelegramService(userRepo, messageRepo, conversationRepo, logger)
 
 	handler := handler.NewTelegramHandler(svc, logger, &cfg)
 

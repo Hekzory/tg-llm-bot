@@ -72,9 +72,9 @@ func (db *DB) GetUserIdByTgId(tg_id int) (int, error) {
 	return id, err
 }
 
-func (db *DB) GetTgIdByUserId(id int) (int, error) {
+func (db *DB) GetTgIdByConvId(convId int) (int, error) {
 	var tg_id int
-	err := db.QueryRowx("SELECT tg_id FROM users WHERE id = $1", id).Scan(&tg_id)
+	err := db.QueryRowx("SELECT tg_id FROM users where id = (SELECT user_id FROM conversations WHERE id = $1)", convId).Scan(&tg_id)
 	if err != nil {
 		return -1, err
 	}
@@ -109,9 +109,9 @@ func (db *DB) UserExists(user *models.User) (bool, error) {
 }
 
 // AddMessage adds a new message to the message_queue
-func (db *DB) AddMessage(message *models.Message) error {
-	query := `INSERT INTO message_queue (user_id, question, status) VALUES ($1, $2, $3) RETURNING id, created_at`
-	return db.QueryRowx(query, message.UserID, message.Question, message.Status).Scan(&message.ID, &message.CreatedAt)
+func (db *DB) AddMessage(message *models.Message) (error, int) {
+	query := `INSERT INTO message_queue (question, status, conversation_id, tg_question_id, tg_answer_id) VALUES ($1, $2, $3, $4, $5) RETURNING id, created_at`
+	return db.QueryRowx(query, message.Question, message.Status, message.ConversationID, message.TgQuestionId, message.TgAnswerId).Scan(&message.ID, &message.CreatedAt), message.ID
 }
 
 // GetMessageByID retrieves a message by its ID
@@ -156,8 +156,8 @@ func (db *DB) GetAllMessages() ([]models.Message, error) {
 
 // UpdateMessage updates an existing message
 func (db *DB) UpdateMessage(message *models.Message) error {
-	query := `UPDATE message_queue SET user_id = $1, question = $2, answer = $3, status = $4 WHERE id = $5`
-	_, err := db.Exec(query, message.UserID, message.Question, message.Answer, message.Status, message.ID)
+	query := `UPDATE message_queue SET question = $1, answer = $2, status = $3 WHERE id = $4`
+	_, err := db.Exec(query, message.Question, message.Answer, message.Status, message.ID)
 	return err
 }
 
@@ -173,4 +173,24 @@ func (db *DB) GetMessagesByStatusAndTime(status string, cutoffTime time.Time) ([
 		return nil, err
 	}
 	return messages, nil
+}
+
+func (db *DB) StartNewConversation(conversation *models.Conversation) error {
+	query := `INSERT INTO conversations (user_id) VALUES ($1) RETURNING id, created_at`
+	return db.QueryRowx(query, conversation.UserID).Scan(&conversation.ID, &conversation.CreatedAt)
+}
+
+func (db *DB) ConvExists(convarsation *models.Conversation) (bool, error) {
+	var exist bool
+	err := db.QueryRowx("SELECT EXISTS(SELECT 1 FROM conversations WHERE user_id = $1);", convarsation.UserID).Scan(&exist)
+	return exist, err
+}
+
+func (db *DB) GetConvIdByUserId(userId int) (int, error) {
+	var conv_id int
+	err := db.QueryRowx("SELECT id FROM conversations WHERE user_id = $1", userId).Scan(&conv_id)
+	if err != nil {
+		return -1, err
+	}
+	return conv_id, err
 }
