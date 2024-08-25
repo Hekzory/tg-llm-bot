@@ -49,7 +49,6 @@ EXECUTE FUNCTION update_updated_at_column();
 -- Create message_queue table
 CREATE TABLE IF NOT EXISTS message_queue (
     id SERIAL PRIMARY KEY,
-    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
     conversation_id INTEGER REFERENCES conversations(id) ON DELETE CASCADE,
     question TEXT NOT NULL,
     answer TEXT NOT NULL DEFAULT '',
@@ -57,7 +56,7 @@ CREATE TABLE IF NOT EXISTS message_queue (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     status VARCHAR(20) CHECK (status IN ('new', 'processing', 'ready', 'answered')) DEFAULT 'new',
     tg_question_id BIGINT UNIQUE,
-    tg_answer_id BIGINT UNIQUE
+    tg_answer_id BIGINT
 );
 
 -- Create an index on conversation_id for faster lookups

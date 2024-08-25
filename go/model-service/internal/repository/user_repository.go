@@ -38,6 +38,6 @@ func (repo *UserRepository) GetAllUsers() ([]models.User, error) {
 }
 
 // AddUser добавляет нового пользователя в базу данных
-func (repo *UserRepository) AddUser(user *models.User) error {
+func (repo *UserRepository) AddUser(user *models.User) (error) {
     return repo.db.AddUser(user)
 }

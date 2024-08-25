@@ -5,18 +5,21 @@ import (
 	"Hekzory/tg-llm-bot/go/shared/logging"
 	"Hekzory/tg-llm-bot/go/telegram-service/internal/repository"
 	"context"
+	"database/sql"
 )
 
 type UserService struct {
 	userRepo    *repository.UserRepository
 	messageRepo *repository.MessageRepository
+	convRepo    *repository.ConversationRepository
 	logger      *logging.Logger
 }
 
-func NewTelegramService(userRepo *repository.UserRepository, messageRepo *repository.MessageRepository, logger *logging.Logger) *UserService {
+func NewTelegramService(userRepo *repository.UserRepository, messageRepo *repository.MessageRepository, convRepo *repository.ConversationRepository, logger *logging.Logger) *UserService {
 	return &UserService{
 		userRepo:    userRepo,
 		messageRepo: messageRepo,
+		convRepo:    convRepo,
 		logger:      logger,
 	}
 }
@@ -46,8 +49,14 @@ func (s *UserService) GetProcessingMessages(ctx context.Context) ([]models.Messa
 	return s.messageRepo.GetProcessingMessages()
 }
 
-func (s *UserService) AddMessage(ctx context.Context, userId int, questiont string) error {
-	return s.messageRepo.AddMessage(&models.Message{UserID: userId, Question: questiont, Status: "new"})
+func (s *UserService) AddMessage(ctx context.Context, questiont string, convID int, tgQuestionedID int) (error, int) {
+	return s.messageRepo.AddMessage(&models.Message{
+		Question:       questiont,
+		Status:         "new",
+		ConversationID: sql.NullInt64{Int64: int64(convID), Valid: true},
+		TgAnswerId:     sql.NullInt64{Int64: int64(0), Valid: true},
+		TgQuestionId:   sql.NullInt64{Int64: int64(tgQuestionedID), Valid: true},
+	})
 
 }
 
@@ -72,6 +81,20 @@ func (s *UserService) GetUserIdByTgId(ctx context.Context, tg_id int) (int, erro
 	return s.userRepo.GetUserIdByTgId(tg_id)
 }
 
-func (s *UserService) GetTgIdByUserId(ctx context.Context, tg_id int) (int, error) {
-	return s.userRepo.GetTgIdByUserId(tg_id)
+func (s *UserService) GetTgIdByConvId(ctx context.Context, convId int) (int, error) {
+	return s.convRepo.GetTgIdByConvId(convId)
+}
+
+func (s *UserService) StartNewConversation(ctx context.Context, id int) error {
+	return s.convRepo.StartNewConversation(&models.Conversation{
+		UserID: id,
+	})
+}
+
+func (s *UserService) ConvExists(ctx context.Context, userId int) (bool, error) {
+	return s.convRepo.ConvExists(&models.Conversation{UserID: userId})
+}
+
+func (s *UserService) GetConvIdByUserId(ctx context.Context, userId int) (int, error) {
+	return s.convRepo.GetConvIdByUserId(userId)
 }

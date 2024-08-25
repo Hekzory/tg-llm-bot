@@ -38,7 +38,7 @@ func (repo *UserRepository) GetAllUsers() ([]models.User, error) {
 }
 
 // AddUser добавляет нового пользователя в базу данных
-func (repo *UserRepository) AddUser(user *models.User) error {
+func (repo *UserRepository) AddUser(user *models.User) (error) {
 	return repo.db.AddUser(user)
 }
 
@@ -50,6 +50,3 @@ func (repo *UserRepository) GetUserIdByTgId(tg_id int) (int, error) {
 	return repo.db.GetUserIdByTgId(tg_id)
 }
 
-func (repo *UserRepository) GetTgIdByUserId(id int) (int, error) {
-	return repo.db.GetTgIdByUserId(id)
-}

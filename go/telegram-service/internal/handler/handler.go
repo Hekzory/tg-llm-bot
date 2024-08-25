@@ -69,17 +69,25 @@ func (h *TelegramHandler) processDatabase(ctx context.Context) {
 			h.logger.Debug("Polling db done")
 
 		case message := <-h.messageToDbQueue:
-
 			if err := h.addNewUser(ctx, message); err != nil {
 				h.logger.Error("Error adding new user: %s", err)
 			}
 
-			id, err := h.service.GetUserIdByTgId(ctx, int(message.Chat.ID))
+			userId, err := h.service.GetUserIdByTgId(ctx, int(message.Chat.ID))
 			if err != nil {
-				h.logger.Error("Error getting user by tg_id: %s", err)
+				h.logger.Error("Error getting user id: %s", err)
 			}
 
-			if err := h.service.AddMessage(ctx, id, message.Text); err != nil {
+			if err := h.startNewConversation(ctx, userId); err != nil {
+				h.logger.Error("Error starting new conversation: %s", err)
+			}
+
+			convId, err := h.service.GetConvIdByUserId(ctx, userId)
+			if err != nil {
+				h.logger.Error("Error getting user id: %s", err)
+			}
+
+			if err, _ := h.service.AddMessage(ctx, message.Text, convId, message.MessageID); err != nil {
 				h.logger.Error("Error sending message to db: %s", err)
 			}
 			h.logger.Info("Message sent")
@@ -91,7 +99,7 @@ func (h *TelegramHandler) processDatabase(ctx context.Context) {
 
 func (h *TelegramHandler) pollTelegram(ctx context.Context, telegramBot *telegram.Bot) {
 
-	updates := h.GetUpdatesChannel(telegramBot)
+	updates := h.getUpdatesChannel(telegramBot)
 	for {
 		select {
 
@@ -100,15 +108,12 @@ func (h *TelegramHandler) pollTelegram(ctx context.Context, telegramBot *telegra
 			return
 
 		case message := <-h.messageToUserQueue:
-			tg_id, err := h.service.GetTgIdByUserId(ctx, message.UserID)
+			tg_id, err := h.service.GetTgIdByConvId(ctx, int(message.ConversationID.Int64))
 			if err != nil {
 				h.logger.Error("Error getting tg id: %s", err)
 			}
 
-			msg := tgbotapi.NewMessage(int64(tg_id), message.Answer)
-
-			_, err = telegramBot.Bot.Send(msg)
-			if err != nil {
+			if err := sendMessage(tg_id, message, telegramBot); err != nil {
 				h.logger.Error("Error sending meassege to user: %s", err)
 			}
 
@@ -118,13 +123,18 @@ func (h *TelegramHandler) pollTelegram(ctx context.Context, telegramBot *telegra
 			}
 
 		case update := <-updates:
+
 			if update.Message == nil {
 				continue
 			}
-			h.messageToDbQueue <- *update.Message
 
+			if !update.Message.IsCommand() {
+				h.messageToDbQueue <- *update.Message
+			} else if err := handleCommands(update, telegramBot); err != nil {
+				h.logger.Error("Error sending message to user: %s", err)
+			}
 		case message := <-h.actionInChat:
-			h.sendActionToUserID(ctx, telegramBot, message.UserID, "typing")
+			h.sendActionToConvID(ctx, telegramBot, int(message.ConversationID.Int64), "typing")
 		}
 	}
 }
@@ -175,7 +185,7 @@ func (h *TelegramHandler) addNewUser(ctx context.Context, message tgbotapi.Messa
 	return nil
 }
 
-func (h *TelegramHandler) GetUpdatesChannel(telegramBot *telegram.Bot) tgbotapi.UpdatesChannel {
+func (h *TelegramHandler) getUpdatesChannel(telegramBot *telegram.Bot) tgbotapi.UpdatesChannel {
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 30
 	updates, err := telegramBot.Bot.GetUpdatesChan(u)
@@ -185,11 +195,60 @@ func (h *TelegramHandler) GetUpdatesChannel(telegramBot *telegram.Bot) tgbotapi.
 	return updates
 }
 
-func (h *TelegramHandler) sendActionToUserID(ctx context.Context, telegramBot *telegram.Bot, id int, action_type string) {
-	tg_id, err := h.service.GetTgIdByUserId(ctx, id)
+func (h *TelegramHandler) sendActionToConvID(ctx context.Context, telegramBot *telegram.Bot, convId int, action_type string) {
+	tg_id, err := h.service.GetTgIdByConvId(ctx, convId)
 	if err != nil {
 		h.logger.Error("Error getting tg id: %s", err)
 	}
 	action := tgbotapi.NewChatAction(int64(tg_id), "typing")
 	telegramBot.Bot.Send(action)
+}
+
+func sendMessage(tg_id int, message models.Message, telegramBot *telegram.Bot) error {
+	var msg tgbotapi.MessageConfig
+	for i := 0; i <= len(message.Answer); i += 4096 {
+		if i+4096 < len(message.Answer) {
+			msg = tgbotapi.NewMessage(int64(tg_id), message.Answer[i:i+4096])
+		} else {
+			msg = tgbotapi.NewMessage(int64(tg_id), message.Answer[i:len(message.Answer)])
+		}
+		msg.ReplyToMessageID = int(message.TgQuestionId.Int64)
+		_, err := telegramBot.Bot.Send(msg)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func handleCommands(update tgbotapi.Update, telegramBot *telegram.Bot) error {
+	msg := tgbotapi.NewMessage(update.Message.Chat.ID, "")
+
+	switch update.Message.Command() {
+	case "start":
+		msg.Text = "Hi!"
+	default:
+		msg.Text = "I don't know that command"
+	}
+	if _, err := telegramBot.Bot.Send(msg); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (h *TelegramHandler) startNewConversation(ctx context.Context, id int) error {
+	exist, err := h.service.ConvExists(ctx, id)
+	if err != nil {
+		h.logger.Error("Error checking is user exist: %s", err)
+		return err
+	}
+
+	if !exist {
+		err := h.service.StartNewConversation(ctx, id)
+		if err != nil {
+			h.logger.Error("Error adding user to db %s", err)
+			return err
+		}
+	}
+	return nil
 }
