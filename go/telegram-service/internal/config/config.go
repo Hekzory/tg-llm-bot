@@ -23,7 +23,7 @@ func (cfg *ServiceConfig) DefaultTGConfig() {
 
 		TGSConfig: TelegramServiceConfig{
 			ActionPollingInterval: duration,
-			TelegramToken:         "",
+			TelegramToken:         "7132229528:AAECkyqF1uf8J0cRA1dClstD6hOE_-NrVrk",
 		},
 	}
 }

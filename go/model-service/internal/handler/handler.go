@@ -38,11 +38,17 @@ func NewModelHandler(service *service.ModelService, logger *logging.Logger, conf
 	}
 }
 
+// Message represents a single message in a dialogue.
+type DialogMessage struct {
+	Role    string `json:"role"`
+	Content string `json:"content"`
+}
+
 // ModelRequest represents the request body for model-related HTTP requests.
 type ModelRequest struct {
-	Model  string `json:"model"`
-	Prompt string `json:"prompt"`
-	Stream bool   `json:"stream"`
+	Model    string          `json:"model"`
+	Messages []DialogMessage `json:"messages"`
+	Stream   bool            `json:"stream"`
 }
 
 func (h *ModelHandler) StartServer() {
@@ -194,13 +200,47 @@ func (h *ModelHandler) processNewMessages(ctx context.Context) {
 	}
 }
 
+func (h *ModelHandler) convertMessagesToDialogMessages(messages []models.Message, originalQuestion string) []DialogMessage {
+	dialogMessages := make([]DialogMessage, len(messages)*2)
+	for i, msg := range messages {
+		dialogMessages[i*2] = DialogMessage{
+			Role:    "user",
+			Content: msg.Question,
+		}
+		dialogMessages[i*2+1] = DialogMessage{
+			Role:    "assistant",
+			Content: msg.Answer,
+		}
+	}
+
+	// Add the original question as the last message
+	dialogMessages = append(dialogMessages, DialogMessage{
+		Role:    "user",
+		Content: originalQuestion,
+	})
+
+	return dialogMessages
+}
+
 func (h *ModelHandler) processNewMessage(ctx context.Context, message models.Message) {
-	url := h.cfg.ModelConfig.ModelApiUrl + "api/generate"
+	url := h.cfg.ModelConfig.ModelApiUrl + "api/chat"
+
+	convId, _ := message.ConversationID.Value()
+	// Get all messages in the conversation
+	messages, err := h.service.GetMessagesByConversationID(ctx, convId.(int64))
+
+	if err != nil {
+		h.logger.Error("Error getting messages by conversation ID: %s", err)
+		return
+	}
+
+	// Convert all messages into DialogMessage structs
+	dialogMessages := h.convertMessagesToDialogMessages(messages, message.Question)
 
 	requestBody, err := json.Marshal(ModelRequest{
-		Model:  h.cfg.ModelConfig.ModelName,
-		Prompt: message.Question,
-		Stream: false,
+		Model:    h.cfg.ModelConfig.ModelName,
+		Messages: dialogMessages,
+		Stream:   false,
 	})
 
 	if err != nil {
@@ -235,7 +275,7 @@ func (h *ModelHandler) processNewMessage(ctx context.Context, message models.Mes
 		return
 	}
 
-	answer, ok := response["response"].(string)
+	answer, ok := response["message"].(map[string]any)["content"].(string)
 	if ok {
 		message.Answer = answer
 		h.messageResultQueue <- message

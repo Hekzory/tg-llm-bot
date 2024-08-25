@@ -45,3 +45,9 @@ func (repo *MessageRepository) GetStuckMessages(timeout time.Duration) ([]models
 	// Используем метод базы данных для получения сообщений по статусу и времени
 	return repo.db.GetMessagesByStatusAndTime("processing", cutoffTime)
 }
+
+func (repo *MessageRepository) GetMessagesByConversationID(conversationID int64) ([]models.Message, error) {
+
+	return repo.db.GetMessagesByConversationID(conversationID)
+
+}
