@@ -15,13 +15,15 @@ func main() {
 	fmt.Println("Hello, telegram-service and David and Oleg!")
 
 	logger, _ := logging.NewLogger("DEBUG")
-	cfg, err := config.LoadConfig(logger)
+	
+	var cfg config.ServiceConfig
+	err := cfg.LoadConfig(logger)
 	if err != nil {
 		logger.Fatal("Error while loading config: %s", err)
 	}
 	logger.Info("Config successfully loaded")
 
-	db, err := database.NewDatabase("postgresql://myuser:secret@db:5432/mydatabase", logger)
+	db, err := database.NewDatabase(cfg.Config.DatabaseUrl, logger)
 	if err != nil {
 		logger.Fatal("Error while loading database: %s", err)
 	}
@@ -31,8 +33,8 @@ func main() {
 
 	svc := service.NewTelegramService(userRepo, messageRepo, logger)
 
-	handler := handler.NewTelegramHandler(svc, logger, cfg)
+	handler := handler.NewTelegramHandler(svc, logger, &cfg)
 
-	handler.StartServer(cfg.ServerPort)
+	handler.StartServer(cfg.Config.ServerPort)
 
 }

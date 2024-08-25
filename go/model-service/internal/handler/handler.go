@@ -21,20 +21,20 @@ import (
 type ModelHandler struct {
 	service              *service.ModelService
 	logger               *logging.Logger
-	cfg                  *config.Config
+	cfg                  *config.ServiceConfig
 	messageQuestionQueue chan models.Message
 	messageResultQueue   chan models.Message
 	httpClient           *http.Client
 }
 
-func NewModelHandler(service *service.ModelService, logger *logging.Logger, config *config.Config) *ModelHandler {
+func NewModelHandler(service *service.ModelService, logger *logging.Logger, config *config.ServiceConfig) *ModelHandler {
 	return &ModelHandler{
 		service:              service,
 		logger:               logger,
 		cfg:                  config,
 		messageQuestionQueue: make(chan models.Message, 100),
 		messageResultQueue:   make(chan models.Message, 100),
-		httpClient:           &http.Client{Timeout: config.ModelAnswerTimeout},
+		httpClient:           &http.Client{Timeout: config.ModelConfig.ModelAnswerTimeout},
 	}
 }
 
@@ -91,7 +91,7 @@ func (h *ModelHandler) StartServer() {
 }
 
 func (h *ModelHandler) resetStuckMessages(ctx context.Context) error {
-	messages, err := h.service.GetStuckMessages(ctx, h.cfg.ModelAnswerTimeout)
+	messages, err := h.service.GetStuckMessages(ctx, h.cfg.ModelConfig.ModelAnswerTimeout)
 	if err != nil {
 		return fmt.Errorf("error fetching stuck messages: %w", err)
 	}
@@ -107,9 +107,9 @@ func (h *ModelHandler) resetStuckMessages(ctx context.Context) error {
 }
 
 func (h *ModelHandler) pullModel(ctx context.Context) error {
-	url := h.cfg.ModelApiUrl + "api/pull"
+	url := h.cfg.ModelConfig.ModelApiUrl + "api/pull"
 	requestBody, err := json.Marshal(map[string]string{
-		"model": h.cfg.ModelName,
+		"model": h.cfg.ModelConfig.ModelName,
 	})
 	if err != nil {
 		return fmt.Errorf("error marshalling request body: %w", err)
@@ -151,7 +151,7 @@ func (h *ModelHandler) pullModel(ctx context.Context) error {
 }
 
 func (h *ModelHandler) pollDatabase(ctx context.Context) {
-	ticker := time.NewTicker(h.cfg.DBPollingInterval)
+	ticker := time.NewTicker(h.cfg.Config.DBPollingInterval)
 	defer ticker.Stop()
 	for {
 		select {
@@ -195,10 +195,10 @@ func (h *ModelHandler) processNewMessages(ctx context.Context) {
 }
 
 func (h *ModelHandler) processNewMessage(ctx context.Context, message models.Message) {
-	url := h.cfg.ModelApiUrl + "api/generate"
+	url := h.cfg.ModelConfig.ModelApiUrl + "api/generate"
 
 	requestBody, err := json.Marshal(ModelRequest{
-		Model:  h.cfg.ModelName,
+		Model:  h.cfg.ModelConfig.ModelName,
 		Prompt: message.Question,
 		Stream: false,
 	})

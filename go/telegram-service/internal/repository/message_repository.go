@@ -33,6 +33,10 @@ func (repo *MessageRepository) GetReadyMessages() ([]models.Message, error) {
 	return repo.db.GetMessageByStatus("ready")
 }
 
+func (repo *MessageRepository) GetProcessingMessages() ([]models.Message, error) {
+	return repo.db.GetMessageByStatus("processing")
+}
+
 func (repo *MessageRepository) UpdateMessage(message *models.Message) error {
 	return repo.db.UpdateMessage(message)
 }

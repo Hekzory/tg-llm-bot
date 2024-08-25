@@ -4,81 +4,47 @@ import (
 	"Hekzory/tg-llm-bot/go/shared/logging"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/BurntSushi/toml"
 )
 
 // Config holds all configuration settings.
 type Config struct {
-	Logger   LoggerConfig   `toml:"logger"`
-	Database DatabaseConfig `toml:"database"`
-	Server   ServerConfig   `toml:"server"`
-}
-
-// LoggerConfig defines logging level
-type LoggerConfig struct {
-	Level string `toml:"log_level"`
-}
-
-// DatabaseConfig defines database connection parameters.
-type DatabaseConfig struct {
-	Host     string `toml:"host"`
-	Port     int    `toml:"port"`
-	Username string `toml:"username"`
-	Password string `toml:"password"`
-	Database string `toml:"db_name"`
-}
-
-// ServerConfig specifies server port.
-type ServerConfig struct {
-	Port int `toml:"port"`
+	LogLevel          string        `toml:"log_level"`
+	DatabaseUrl       string        `toml:"database_url"`
+	ServerPort        int           `toml:"port"`
+	DBPollingInterval time.Duration `toml:"db_polling_interval"`
 }
 
 // DefaultConfig returns a default configuration.
 func DefaultConfig() Config {
+	duration, _ := time.ParseDuration("5s")
 	return Config{
-		LoggerConfig{
-			Level: "DEBUG",
-		},
-		DatabaseConfig{
-			Host:     "default",
-			Port:     5432,
-			Username: "user",
-			Password: "default",
-			Database: "default",
-		},
-		ServerConfig{Port: 1111},
+		LogLevel:          "DEBUG",
+		DatabaseUrl:       "postgresql://myuser:secret@db:5432/mydatabase",
+		ServerPort:        1111,
+		DBPollingInterval: duration,
 	}
 }
 
 // NewConfig initializes and decodes the configuration.
-func NewConfig(logger *logging.Logger) (*Config, error) {
-	var config Config
+func LoadConfig(logger *logging.Logger, fileDir string, cfg any) (error) {
 	configDir := "config"
-	configFilePath := filepath.Join(configDir, "config.toml")
+	configFilePath := filepath.Join(configDir, fileDir)
 
-	// Ensure config directory exists.
-	if _, err := os.Stat(configDir); os.IsNotExist(err) {
-		if err = os.Mkdir(configDir, 0644); err != nil {
-			logger.Fatal("Failed to create config directory")
-		}
-	}
-
-	// Create default config if it doesn't exist.
-	if _, err := os.Stat(configFilePath); os.IsNotExist(err) {
-		defaultConfigText, err := toml.Marshal(DefaultConfig())
+	if _, err := os.Stat(configFilePath); err != nil {
+		serviceConfigText, err := toml.Marshal(cfg)
 		if err != nil {
-			logger.Fatal("Error encoding default config")
+			return err
 		}
-		if err = os.WriteFile(configFilePath, defaultConfigText, 0644); err != nil {
-			logger.Fatal("Failed to write default config file")
+		if err = os.WriteFile(configFilePath, serviceConfigText, 0644); err != nil {
+			return  err
 		}
 	}
 
-	// Decode the configuration file.
-	if _, err := toml.DecodeFile(configFilePath, &config); err != nil {
-		logger.Fatal("Configuration file could not be decoded")
+	if _, err := toml.DecodeFile(configFilePath, &cfg); err != nil {
+		return err
 	}
-
-	return &config, nil
+	return nil
 }

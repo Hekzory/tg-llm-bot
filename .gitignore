@@ -239,3 +239,6 @@ ollama/data/id_ed25519
 ollama/data/id_ed25519.pub
 
 postgres/**
+
+config/model-service.toml
+config/telegram-service.toml

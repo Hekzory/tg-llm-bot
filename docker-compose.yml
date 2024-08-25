@@ -3,6 +3,8 @@ services:
     build:
       context: ./
       dockerfile: ./go/model-service/Dockerfile
+    volumes:
+      - ./config:/app/model-service/config
     ports:
       - "8081:8081"
     depends_on:
@@ -15,6 +17,8 @@ services:
     build:
       context: ./
       dockerfile: ./go/telegram-service/Dockerfile
+    volumes:
+      - ./config:/app/telegram-service/config
     ports:
       - "8082:8082"
     depends_on:
