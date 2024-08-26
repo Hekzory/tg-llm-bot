@@ -26,7 +26,8 @@ func (cfg *ServiceConfig) DefaultModelConfig() {
 			ModelApiUrl:        "http://ollama:11434/",
 			ModelAnswerTimeout: modelAnswerTimeout,
 			// other considered choices are "mistral-nemo:12b-instruct-2407-q6_K", "llama3.1:70b-instruct-q4_K_S"
-			ModelName:          "gemma2:27b-instruct-q6_K",
+			// "gemma2:27b-instruct-q6_K", "phi3:14b-medium-128k-instruct-q8_0"
+			ModelName: "gemma2:27b-instruct-q6_K",
 		},
 	}
 }
