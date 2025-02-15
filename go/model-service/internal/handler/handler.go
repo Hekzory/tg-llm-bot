@@ -188,6 +188,9 @@ func (h *ModelHandler) pollDatabase(ctx context.Context) {
 }
 
 func (h *ModelHandler) processNewMessages(ctx context.Context) {
+
+	sem := make(chan struct{}, 2) // Semaphore with a limit of 2
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -195,7 +198,11 @@ func (h *ModelHandler) processNewMessages(ctx context.Context) {
 			return
 		case message := <-h.messageQuestionQueue:
 			h.logger.Debug("Got message to process: %v", message)
-			go h.processNewMessage(ctx, message)
+			sem <- struct{}{} // Acquire semaphore
+			go func(msg models.Message) {
+				defer func() { <-sem }() // Release semaphore
+				h.processNewMessage(ctx, msg)
+			}(message)
 		}
 	}
 }

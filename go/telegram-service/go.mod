@@ -1,6 +1,6 @@
 module Hekzory/tg-llm-bot/go/telegram-service
 
-go 1.23.0
+go 1.24.0
 
 replace Hekzory/tg-llm-bot/go/shared => ../shared
 

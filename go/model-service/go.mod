@@ -1,13 +1,13 @@
 module Hekzory/tg-llm-bot/go/model-service
 
-go 1.23.0
+go 1.24.0
 
 replace Hekzory/tg-llm-bot/go/shared => ../shared
 
 require Hekzory/tg-llm-bot/go/shared v0.0.0-00010101000000-000000000000
 
 require (
-	github.com/BurntSushi/toml v1.4.0
+	github.com/BurntSushi/toml v1.4.0 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
 	github.com/jackc/pgconn v1.14.3 // indirect
 	github.com/jackc/pgio v1.0.0 // indirect
