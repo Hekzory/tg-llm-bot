@@ -1,0 +1,36 @@
+name: Build & test shared
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.24.0'
+
+    - name: Prepare directory structure
+      run: |
+        mkdir -p go/shared/sql
+        cp -r sql/* go/shared/sql/
+
+    - name: Build
+      run: |
+        cd go/shared
+        go mod download
+        go build -o main .
+
+    - name: Test logging
+      run: |
+        cd go/shared/logging
+        go test
