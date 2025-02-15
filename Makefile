@@ -2,27 +2,27 @@
 		build up upd down restart reup reupd
 
 build:
-		docker-compose build
+		COMPOSE_BAKE=true docker-compose build
 
 up:
-		docker-compose up
+		COMPOSE_BAKE=true docker-compose up
 
 upd:
-		docker-compose up -d
+		COMPOSE_BAKE=true docker-compose up -d
 
 down:
-		docker-compose down
+		COMPOSE_BAKE=true docker-compose down
 
 restart:
-		docker-compose stop
-		docker-compose up -d
+		COMPOSE_BAKE=true docker-compose stop
+		COMPOSE_BAKE=true docker-compose up -d
 
 reup:
 		docker-compose down
-		docker-compose build
-		docker-compose up
+		COMPOSE_BAKE=true docker-compose build
+		COMPOSE_BAKE=true docker-compose up
 
 reupd:
 		docker-compose down
-		docker-compose build
-		docker-compose up -d
+		COMPOSE_BAKE=true docker-compose build
+		COMPOSE_BAKE=true docker-compose up -d
