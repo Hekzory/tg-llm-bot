@@ -9,7 +9,7 @@ import (
 	"context"
 	"time"
 
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
 type TelegramHandler struct {
@@ -188,10 +188,7 @@ func (h *TelegramHandler) addNewUser(ctx context.Context, message tgbotapi.Messa
 func (h *TelegramHandler) getUpdatesChannel(telegramBot *telegram.Bot) tgbotapi.UpdatesChannel {
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 30
-	updates, err := telegramBot.Bot.GetUpdatesChan(u)
-	if err != nil {
-		h.logger.Error("Error getting updates: %s", err)
-	}
+	updates := telegramBot.Bot.GetUpdatesChan(u)
 	return updates
 }
 
