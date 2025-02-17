@@ -1,5 +1,8 @@
 FROM golang:1.24.0-alpine
 
+# Add non-root user and group
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+
 WORKDIR /app
 
 # Copy go.mod and go.sum files first
@@ -18,9 +21,18 @@ COPY sql ./telegram-service/sql/
 
 WORKDIR /app/telegram-service
 
-RUN mkdir -p ./cfg
+# Create config directory with proper permissions
+RUN mkdir -p /app/telegram-service/config && \
+    chown -R appuser:appgroup /app/telegram-service/config
+
 RUN --mount=type=cache,target=/go/pkg/mod/ \
     --mount=type=cache,target="/root/.cache/go-build" \
     go build -o main .
+
+# Change ownership of the application directory
+RUN chown -R appuser:appgroup /app
+
+# Switch to non-root user
+USER appuser
 
 CMD ["./main"]

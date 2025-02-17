@@ -3,6 +3,7 @@ package config
 import (
 	"Hekzory/tg-llm-bot/go/shared/config"
 	"Hekzory/tg-llm-bot/go/shared/logging"
+	"fmt"
 	"time"
 )
 
@@ -33,10 +34,30 @@ func (cfg *ServiceConfig) DefaultModelConfig() {
 }
 
 func (cfg *ServiceConfig) LoadConfig(logger *logging.Logger) error {
+	logger.Debug("Initializing default model service config")
 	cfg.DefaultModelConfig()
+	
+	logger.Debug("Loading model service config")
 	err := config.LoadConfig(logger, "model-service.toml", cfg)
 	if err != nil {
+		logger.Error("Failed to load model service config: %v", err)
 		return err
 	}
+	
+	logger.Debug("Loaded config values - Model API URL: %s, Model Name: %s, Timeout: %v", 
+		cfg.ModelConfig.ModelApiUrl,
+		cfg.ModelConfig.ModelName,
+		cfg.ModelConfig.ModelAnswerTimeout)
+		
+	if cfg.ModelConfig.ModelApiUrl == "" {
+		logger.Fatal("Model API URL is empty after config load!")
+		return fmt.Errorf("model API URL is empty after config load")
+	}
+	
+	if cfg.ModelConfig.ModelName == "" {
+		logger.Fatal("Model name is empty after config load!")
+		return fmt.Errorf("model name is empty after config load")
+	}
+	
 	return nil
 }
