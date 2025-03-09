@@ -3,7 +3,7 @@ package service
 import (
 	"Hekzory/tg-llm-bot/go/shared/database/models"
 	"Hekzory/tg-llm-bot/go/shared/logging"
-	"Hekzory/tg-llm-bot/go/telegram-service/internal/repository"
+	"Hekzory/tg-llm-bot/go/telegram-service/app/repository"
 	"context"
 	"database/sql"
 )

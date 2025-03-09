@@ -3,10 +3,10 @@ package main
 import (
 	"Hekzory/tg-llm-bot/go/shared/database"
 	"Hekzory/tg-llm-bot/go/shared/logging"
-	"Hekzory/tg-llm-bot/go/telegram-service/internal/config"
-	"Hekzory/tg-llm-bot/go/telegram-service/internal/handler"
-	"Hekzory/tg-llm-bot/go/telegram-service/internal/repository"
-	"Hekzory/tg-llm-bot/go/telegram-service/internal/service"
+	"Hekzory/tg-llm-bot/go/telegram-service/app/config"
+	"Hekzory/tg-llm-bot/go/telegram-service/app/handler"
+	"Hekzory/tg-llm-bot/go/telegram-service/app/repository"
+	"Hekzory/tg-llm-bot/go/telegram-service/app/service"
 
 	"fmt"
 )

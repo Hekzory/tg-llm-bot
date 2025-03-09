@@ -1,8 +1,8 @@
 package handler
 
 import (
-	"Hekzory/tg-llm-bot/go/model-service/internal/config"
-	"Hekzory/tg-llm-bot/go/model-service/internal/service"
+	"Hekzory/tg-llm-bot/go/model-service/app/config"
+	"Hekzory/tg-llm-bot/go/model-service/app/service"
 	"Hekzory/tg-llm-bot/go/shared/database/models"
 	"Hekzory/tg-llm-bot/go/shared/logging"
 	"bytes"
