@@ -21,7 +21,7 @@ The project consists of two main services:
 ## Prerequisites
 
 - Docker and Docker Compose
-- Go 1.24.0 or later (for development)
+- Go 1.24.1 or later (for development)
 - NVIDIA GPU + drivers (optional, for GPU acceleration)
 
 ## Quick Start

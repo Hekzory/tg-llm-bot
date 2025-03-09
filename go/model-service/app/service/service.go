@@ -1,7 +1,7 @@
 package service
 
 import (
-	"Hekzory/tg-llm-bot/go/model-service/internal/repository"
+	"Hekzory/tg-llm-bot/go/model-service/app/repository"
 	"Hekzory/tg-llm-bot/go/shared/database/models"
 	"Hekzory/tg-llm-bot/go/shared/logging"
 	"context"

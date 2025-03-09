@@ -3,9 +3,9 @@ package handler
 import (
 	"Hekzory/tg-llm-bot/go/shared/database/models"
 	"Hekzory/tg-llm-bot/go/shared/logging"
-	"Hekzory/tg-llm-bot/go/telegram-service/internal/config"
-	"Hekzory/tg-llm-bot/go/telegram-service/internal/service"
-	"Hekzory/tg-llm-bot/go/telegram-service/internal/telegram"
+	"Hekzory/tg-llm-bot/go/telegram-service/app/config"
+	"Hekzory/tg-llm-bot/go/telegram-service/app/service"
+	"Hekzory/tg-llm-bot/go/telegram-service/app/telegram"
 	"context"
 	"time"
 
