@@ -1,4 +1,4 @@
-FROM golang:1.24.1-alpine
+FROM golang:1.24.2-alpine
 
 # Add non-root user and group
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup

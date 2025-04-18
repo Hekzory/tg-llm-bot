@@ -21,7 +21,7 @@ The project consists of two main services:
 ## Prerequisites
 
 - Docker and Docker Compose
-- Go 1.24.1 or later (for development)
+- Go 1.24.2 or later (for development)
 - NVIDIA GPU + drivers (optional, for GPU acceleration)
 
 ## Quick Start
@@ -46,7 +46,7 @@ For CPU-only usage:
 docker compose up --build
 ```
 
-or 
+or
 
 ```bash
 make up
@@ -62,7 +62,7 @@ docker compose -f docker-compose-nvidia.yml up --build
 
 - Search for `@your_bot_username` in Telegram
 
-
 ## Acknowledgments
 
 - [Ollama](https://ollama.ai/) for providing the LLM serving infrastructure
+
